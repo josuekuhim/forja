@@ -43,6 +43,6 @@ Alternativa descartada por enquanto: treinar com vocabulário reduzido e mapear 
 
 ## Pendências
 
-- [ ] Confirmar licença e vocab no Hub.
-- [ ] Rodar o modelo base + prompt em 20 casos de cada categoria (baseline zero).
+- [ ] Confirmar licença e vocab no Hub. _Parcial (2026-11-18): o repositório `Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF` é Apache 2.0 e sem gate; falta conferir o `vocab_size` no `config.json` do modelo original._
+- [ ] Rodar o modelo base + prompt em 20 casos de cada categoria (baseline zero). _Parcial (2026-11-18): rodado no `forja-seed-v0` (16 casos, sem juiz), score 0,273; recusa 0/3 e detecção de bug 0/4. Ver `forja-evals/baselines/`._
 - [ ] Medir fertilidade do tokenizer (tokens por palavra) em português vs. inglês.
