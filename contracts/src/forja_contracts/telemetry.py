@@ -74,6 +74,9 @@ class LLMInteraction(_Frozen):
     input_tokens: int | None = None
     output_tokens: int | None = None
     duracao_s: float | None = None
+    # A chamada falhou (timeout, servidor fora): nada foi publicado e o worker tenta de novo.
+    # Não entra no eval online, que julga o que o usuário viu.
+    erro: str | None = None
 
 
 class Feedback(_Frozen):
@@ -111,6 +114,13 @@ def _duration(span: dict[str, Any]) -> float | None:
     return (b - a).total_seconds()
 
 
+def _error(span: dict[str, Any]) -> str | None:
+    st = span.get("status") or {}
+    if st.get("status_code") == "ERROR":
+        return st.get("description") or "erro"
+    return None
+
+
 def load_interactions(path: str | Path) -> tuple[list[LLMInteraction], list[Feedback]]:
     """Reconstrói chamadas ao modelo e feedback humano a partir dos spans exportados."""
     calls: list[LLMInteraction] = []
@@ -134,6 +144,7 @@ def load_interactions(path: str | Path) -> tuple[list[LLMInteraction], list[Feed
                     input_tokens=a.get(ATTR_INPUT_TOKENS),
                     output_tokens=a.get(ATTR_OUTPUT_TOKENS),
                     duracao_s=_duration(s),
+                    erro=_error(s),
                 )
             )
         elif s.get("name") == SPAN_FEEDBACK:

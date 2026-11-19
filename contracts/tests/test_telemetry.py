@@ -39,8 +39,13 @@ def test_load_interactions_e_ultimo_feedback(tmp_path):
     ]
     p = tmp_path / "spans.jsonl"
     p.write_text("\n".join(json.dumps(s) for s in spans) + "\n", encoding="utf-8")
+    erro = _span(t.SPAN_LLM, {t.ATTR_FILE: "b.py"}, span="0x02")
+    erro["status"] = {"status_code": "ERROR", "description": "timeout"}
+    with p.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(erro) + "\n")
     calls, fb = t.load_interactions(tmp_path)  # diretório também vale
-    assert len(calls) == 1
+    assert [c.erro for c in calls] == [None, "timeout"]
+    calls = calls[:1]
     c = calls[0]
     assert (c.trace_id, c.pr, c.mensagens, c.duracao_s) == ("aa", 7, msgs, 2.5)
     assert c.comentarios[0].severidade == "bug"
