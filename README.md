@@ -37,7 +37,7 @@ Todo número desta tabela vem de uma execução do `forja-evals`, com link.
 | [forja-pretrain](../forja-pretrain) | Transformer do zero; vira o draft model | 🚧 código pronto, falta treinar |
 | [forja-evals](../forja-evals) | A régua: evals offline, juiz calibrado, gate no CI | 🚧 v1 offline pronta |
 | forja-posttrain | SFT → LoRA → QLoRA → DPO no modelo base | ⏳ |
-| forja-serve | Engine de inferência OpenAI-compatível | v0: benchmark real (batching 2,6×) e gate de qualidade (int8 ok, int4 degenera); speculative aguarda o draft |
+| forja-serve | Engine de inferência OpenAI-compatível | v0: benchmark real (batching 2,6×) e gate de qualidade (int8 aprovado, int4 reprovado por loops); speculative aguarda o draft |
 | forja-review | GitHub App que revisa PRs em português | ⏳ |
 
 ## O que mora neste repositório
