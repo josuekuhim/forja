@@ -36,9 +36,10 @@ Todo número desta tabela vem de uma execução do `forja-evals`, com link.
 | --- | --- | --- |
 | [forja-pretrain](../forja-pretrain) | Transformer do zero; vira o draft model | 🚧 código pronto, falta treinar |
 | [forja-evals](../forja-evals) | A régua: evals offline, juiz calibrado, gate no CI | 🚧 v1 offline pronta |
-| forja-posttrain | SFT → LoRA → QLoRA → DPO no modelo base | ⏳ |
+| [forja-posttrain](../forja-posttrain) | SFT → LoRA → QLoRA → DPO no modelo base | 🚧 R1 em CPU: SFT LoRA leva o Qwen 0.5B de 1 a 15/53 bugs num PR de templates nunca vistos, formato 100% válido, sem regressão no seed-v0; ruff sozinho acha 25/53 e ruff + modelo 32/53. DPO on-policy cortou extras (44 → 34) mas também acertos (15 → 11): o gargalo é o dado; E1–E4 aguardam GPU |
 | [forja-serve](../forja-serve) | Engine de inferência OpenAI-compatível | v0: benchmark real (batching 2,6×) e gate de qualidade (int8 aprovado, int4 reprovado por loops); speculative aguarda o draft |
-| [forja-review](../forja-review) | GitHub App que revisa PRs em português | v0: App completo (webhook, fila, review inline, feedback, traces → eval online). Com Gemma 26B acha 4/4 bugs num PR reservado; com Qwen 0.5B/1.5B, 0/4: é o alvo do pós-treino |
+| [forja-review](../forja-review) | GitHub App que revisa PRs em português | v0: App completo (webhook, fila, review inline, feedback, traces → eval online). Com Gemma 26B acha 4/4 bugs num PR reservado; Qwen 0.5B base 0/4, pós-treinado 2/8 nos plantados; linha de base com ruff na mesma régua |
+| [forja-dados](../forja-dados) | Fundação de dados: bugs reais de repositórios públicos viram datasets versionados de treino e avaliação (bronze → prata → ouro, Dagster + DuckDB) | 🚧 v0: esqueleto completo (Dagster + DuckDB, checks bloqueantes, 71 testes sobre fixtures); falta o piloto com dado real. [Spec](../forja-dados/SPEC.md) |
 
 ## O que mora neste repositório
 
