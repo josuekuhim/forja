@@ -1,48 +1,48 @@
-# ADR 0001: Modelo base e tokenizer
+# ADR 0001: Base model and tokenizer
 
-- **Status:** proposto (confirmar na semana 12)
-- **Data:** 2026-11-18
+- **Status:** accepted with plan B. The 0.5B is the model used in post-training (R1 and R2, see [forja-posttrain](../../../forja-posttrain)); the 1.5B is still planned (E2–E4)
+- **Date:** 2026-11-18
 
-## Contexto
+## Context
 
-O modelo base define o tokenizer, e o tokenizer trava três coisas:
+The base model defines the tokenizer, and the tokenizer locks three things:
 
-1. o **forja-pretrain**, que precisa do mesmo vocabulário para servir de draft model;
-2. o **forja-posttrain**, que adapta esse modelo;
-3. o **forja-serve**, que faz speculative decoding com os dois.
+1. **forja-pretrain**, which needs the same vocabulary to serve as the draft model;
+2. **forja-posttrain**, which adapts this model;
+3. **forja-serve**, which runs speculative decoding with both.
 
-Requisitos: 0,5 a 1,5B parâmetros, licença permissiva, bom em código, tokenizer razoável para português, cabe no T4/P100 do Kaggle/Colab para LoRA e QLoRA.
+Requirements: 0.5 to 1.5B parameters, permissive license, good at code, a reasonable tokenizer for Portuguese, fits on Kaggle/Colab's T4/P100 for LoRA and QLoRA.
 
-## Opções
+## Options
 
-| Modelo | Params | Licença | Vocab | Observação |
+| Model | Params | License | Vocab | Note |
 | --- | --- | --- | --- | --- |
-| Qwen2.5-Coder-0.5B-Instruct | 0,5B | Apache 2.0 | 151.665 | Mais barato, SFT completo cabe em GPU gratuita |
-| **Qwen2.5-Coder-1.5B-Instruct** | 1,5B | Apache 2.0 | 151.665 | Melhor em código; mesmo tokenizer do 0,5B |
-| SmolLM2-1.7B-Instruct | 1,7B | Apache 2.0 | 49.152 | Vocab pequeno (bom pro draft), mas fraco em português |
+| Qwen2.5-Coder-0.5B-Instruct | 0.5B | Apache 2.0 | 151,665 | Cheapest, full SFT fits on a free GPU |
+| **Qwen2.5-Coder-1.5B-Instruct** | 1.5B | Apache 2.0 | 151,665 | Better at code; same tokenizer as the 0.5B |
+| SmolLM2-1.7B-Instruct | 1.7B | Apache 2.0 | 49,152 | Small vocab (good for the draft), but weak in Portuguese |
 
-> Verificar no Hub, antes de travar: licença atual, se há uma geração mais nova com a mesma licença, e o `vocab_size` exato em `config.json` (o embedding do Qwen é alocado com 151.936 linhas, acima do vocab real).
+> Check on the Hub before locking: current license, whether there is a newer generation with the same license, and the exact `vocab_size` in `config.json` (Qwen's embedding is allocated with 151,936 rows, above the real vocab).
 
-## Decisão proposta
+## Proposed decision
 
-**Qwen2.5-Coder-1.5B-Instruct** como modelo de produção, com o **0.5B como plano B** (mesmo tokenizer, então nada a montante muda se o 1,5B não couber).
+**Qwen2.5-Coder-1.5B-Instruct** as the production model, with the **0.5B as plan B** (same tokenizer, so nothing upstream changes if the 1.5B does not fit).
 
-## Consequência importante para o forja-pretrain
+## Important consequence for forja-pretrain
 
-Com ~152k tokens no vocabulário, **a tabela de embedding domina um modelo pequeno**:
+With ~152k tokens in the vocabulary, **the embedding table dominates a small model**:
 
-| d_model | Embedding (tied) | Para 10–50M no total... |
+| d_model | Embedding (tied) | For 10–50M in total... |
 | --- | --- | --- |
-| 256 | 38,9M | quase nada sobra para os blocos |
-| 384 | 58,4M | já passa de 50M só no embedding |
-| 512 | 77,8M | — |
+| 256 | 38.9M | almost nothing is left for the blocks |
+| 384 | 58.4M | already over 50M in the embedding alone |
+| 512 | 77.8M | — |
 
-Por isso o forja-pretrain passa a reportar **parâmetros não-embedding** (convenção de Kaplan et al./Chinchilla) e mira **10–50M não-embedding**, com embedding amarrado ao `lm_head`. Isso é uma limitação a documentar no README, não um bug: é o preço de reaproveitar o tokenizer para o speculative decoding.
+That is why forja-pretrain reports **non-embedding parameters** (the Kaplan et al./Chinchilla convention) and targets **10–50M non-embedding**, with the embedding tied to the `lm_head`. This is a limitation to document in the README, not a bug: it is the price of reusing the tokenizer for speculative decoding.
 
-Alternativa descartada por enquanto: treinar com vocabulário reduzido e mapear IDs. Quebra a verificação de tokens no speculative decoding e adiciona complexidade sem ganho para o portfólio.
+Alternative discarded for now: training with a reduced vocabulary and mapping IDs. It breaks token verification in speculative decoding and adds complexity with no gain for the portfolio.
 
-## Pendências
+## Open items
 
-- [ ] Confirmar licença e vocab no Hub. _Parcial (2026-11-18): o repositório `Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF` é Apache 2.0 e sem gate; falta conferir o `vocab_size` no `config.json` do modelo original._
-- [ ] Rodar o modelo base + prompt em 20 casos de cada categoria (baseline zero). _Parcial (2026-11-18): rodado no `forja-seed-v0` (16 casos, sem juiz), score 0,273; recusa 0/3 e detecção de bug 0/4. Ver `forja-evals/baselines/`._
-- [ ] Medir fertilidade do tokenizer (tokens por palavra) em português vs. inglês.
+- [ ] Confirm license and vocab on the Hub. _Partial (2026-11-18): the `Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF` repository is Apache 2.0 and not gated; the `vocab_size` in the original model's `config.json` is still to be checked._
+- [ ] Run the base model + prompt on 20 cases per category (zero baseline). _Partial (2026-11-18): run on `forja-seed-v0` (16 cases, no judge), score 0.273; refusal 0/3 and bug detection 0/4. See `forja-evals/baselines/`._
+- [ ] Measure tokenizer fertility (tokens per word) in Portuguese vs. English.

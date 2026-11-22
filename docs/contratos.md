@@ -1,58 +1,58 @@
-# Contratos do Forja
+# Forja contracts
 
-Os contratos são a cola do sistema. Mudou um contrato? Sobe a versão em `forja_contracts.__version__` e registra no CHANGELOG.
+The contracts are the glue of the system. Changed a contract? Bump `forja_contracts.__version__` and record it in the CHANGELOG.
 
-A implementação de referência está em [`contracts/src/forja_contracts`](../contracts/src/forja_contracts). Os repositórios importam esses modelos em vez de redefinir campos.
+The reference implementation is in [`contracts/src/forja_contracts`](../contracts/src/forja_contracts). Repositories import these models instead of redefining fields. Field names are in Portuguese, the project's target language; their meaning is given below.
 
-## 1. API de modelo
+## 1. Model API
 
-OpenAI-compatível: `POST /v1/chat/completions`, com `stream: true` via SSE. Produzida por forja-serve, vLLM e APIs externas; consumida por forja-evals e forja-review.
+OpenAI-compatible: `POST /v1/chat/completions`, with `stream: true` over SSE. Produced by forja-serve, vLLM and external APIs; consumed by forja-evals and forja-review.
 
-**Regra de ouro:** como tudo fala essa API, o forja-evals avalia qualquer coisa com a mesma régua.
+**Golden rule:** since everything speaks this API, forja-evals evaluates anything with the same yardstick.
 
-## 2. Casos de avaliação (`EvalCase`)
+## 2. Evaluation cases (`EvalCase`)
 
-JSONL, um caso por linha. O dataset é **imutável**: a versão é o hash SHA-256 do conteúdo canônico.
+JSONL, one case per line. The dataset is **immutable**: its version is the SHA-256 hash of the canonical content.
 
-| Campo | Tipo | Descrição |
+| Field | Type | Description |
 | --- | --- | --- |
-| `id` | str | Estável entre versões (`explicacao-0001`) |
-| `categoria` | enum | `explicacao`, `deteccao_bug`, `correcao`, `api`, `recusa` |
-| `input` | str | O que o usuário manda (código + pergunta) |
-| `referencia` | str \| null | Resposta de referência, quando houver |
-| `metadados` | dict | `linguagem`, `origem`, `licenca`, `testes` (para correções verificáveis) |
+| `id` | str | Stable across versions (`explicacao-0001`) |
+| `categoria` | enum | Category: `explicacao` (explanation), `deteccao_bug` (bug detection), `correcao` (fix), `api`, `recusa` (refusal) |
+| `input` | str | What the user sends (code + question) |
+| `referencia` | str \| null | Reference answer, when there is one |
+| `metadados` | dict | Metadata: `linguagem`, `origem`, `licenca`, `testes` (for verifiable fixes) |
 
-## 3. Pares de preferência (`PreferencePair`)
+## 3. Preference pairs (`PreferencePair`)
 
-| Campo | Tipo | Descrição |
+| Field | Type | Description |
 | --- | --- | --- |
 | `prompt` | str | |
-| `escolhida` | str | |
-| `rejeitada` | str | |
-| `origem` | enum | `juiz`, `humano`, `juiz+humano` |
+| `escolhida` | str | Chosen answer |
+| `rejeitada` | str | Rejected answer |
+| `origem` | enum | Source: `juiz` (judge), `humano` (human), `juiz+humano` |
 
-Mapeia direto para `prompt/chosen/rejected` do `DPOTrainer` do TRL. **Nunca** gerado a partir do conjunto de avaliação final (ver riscos: circularidade).
+Maps directly to TRL `DPOTrainer`'s `prompt/chosen/rejected`. **Never** generated from the final evaluation set (see risks: circularity).
 
-## 4. Modelos
+## 4. Models
 
-safetensors no Hugging Face Hub, com model card contendo: link da execução de eval, config, seed, commit do código.
+safetensors on the Hugging Face Hub, with a model card containing: link to the eval run, config, seed, code commit.
 
-## 5. Resultados (`EvalRunRef`)
+## 5. Results (`EvalRunRef`)
 
-Toda execução do forja-evals tem um ID. Model cards e READMEs linkam esse ID.
+Every forja-evals run has an ID. Model cards and READMEs link that ID.
 
-## 6. Configuração
+## 6. Configuration
 
-YAML versionado + seed + lockfile (`uv.lock`). Todo experimento salva a config resolvida junto com os artefatos.
+Versioned YAML + seed + lockfile (`uv.lock`). Every experiment saves the resolved config alongside its artifacts.
 
-## 7. Traces online (`forja_contracts.telemetry`)
+## 7. Online traces (`forja_contracts.telemetry`)
 
-Spans OpenTelemetry que o **forja-review** emite e o **forja-evals** consome (`forja-evals online`). Em disco: JSONL, um span por linha, no formato de `ReadableSpan.to_json()`; também podem ir por OTLP para um coletor.
+OpenTelemetry spans that **forja-review** emits and **forja-evals** consumes (`forja-evals online`). On disk: JSONL, one span per line, in the `ReadableSpan.to_json()` format; they can also go over OTLP to a collector.
 
-| Span | Quando | Atributos principais |
+| Span | When | Main attributes |
 | --- | --- | --- |
-| `forja.review` | um PR num commit (pai das chamadas) | `forja.repo`, `forja.pr`, `forja.head_sha`, `gen_ai.request.model` |
-| `forja.review.llm` | uma chamada ao modelo (um arquivo ou pedaço) | `forja.file`, `gen_ai.input.messages`, `gen_ai.output.text`, `gen_ai.usage.*`, `forja.comments`, `forja.problems` |
-| `forja.review.feedback` | mudou o 👍/👎 de um comentário | `forja.review_trace_id`, `forja.comment_id`, `forja.file`, `forja.line`, `forja.feedback.up/down` |
+| `forja.review` | one PR at one commit (parent of the calls) | `forja.repo`, `forja.pr`, `forja.head_sha`, `gen_ai.request.model` |
+| `forja.review.llm` | one model call (one file or chunk) | `forja.file`, `gen_ai.input.messages`, `gen_ai.output.text`, `gen_ai.usage.*`, `forja.comments`, `forja.problems` |
+| `forja.review.feedback` | a comment's 👍/👎 changed | `forja.review_trace_id`, `forja.comment_id`, `forja.file`, `forja.line`, `forja.feedback.up/down` |
 
-`gen_ai.*` segue as convenções semânticas GenAI do OpenTelemetry. O feedback chega dias depois da review, num trace próprio; `forja.review_trace_id` é o que liga os dois. Com `FORJA_REVIEW_CAPTURAR_CONTEUDO=0` (repos privados), diff e resposta não entram no trace e a chamada fica fora da amostra do eval online.
+`gen_ai.*` follows OpenTelemetry's GenAI semantic conventions. Feedback arrives days after the review, in its own trace; `forja.review_trace_id` is what links the two. With `FORJA_REVIEW_CAPTURAR_CONTEUDO=0` (private repos), the diff and the answer stay out of the trace, and the call is left out of the online-eval sample.
