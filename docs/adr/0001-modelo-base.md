@@ -1,6 +1,6 @@
 # ADR 0001: Base model and tokenizer
 
-- **Status:** accepted with plan B. The 0.5B is the model used in post-training (R1 and R2, see [forja-posttrain](../../../forja-posttrain)); the 1.5B is still planned (E2–E4)
+- **Status:** accepted with plan B. The 0.5B is the model used in post-training (R1 and R2, see [forja-posttrain](https://github.com/josuekuhim/forja-posttrain)); the 1.5B is still planned (E2–E4)
 - **Date:** 2026-11-18
 
 ## Context
