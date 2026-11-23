@@ -2,6 +2,8 @@
 
 **A software-engineering LLM for Portuguese, from training to production.**
 
+By Josué Kuhim · [portfolio](https://josuekuhim.github.io)
+
 A small model is trained, adapted, evaluated and served for a real task: **explaining code and reviewing pull requests in Portuguese**. Each repository delivers something the next one uses.
 
 > **Status:** the system runs end to end, and its weak link was measured and fixed with data. A PR goes through a webhook, a queue, forja-serve, comments anchored to lines, and traces that become online evals. The model is Qwen2.5-Coder 0.5B ([ADR 0001](docs/adr/0001-modelo-base.md)). Post-training on **real bug-fix commits** (forja-dados → forja-posttrain R2) tripled the real bugs found and cut wrong comments by 3.5×, with no forgetting. Still to do: train forja-pretrain (the speculative-decoding draft) and run the 1.5B.
